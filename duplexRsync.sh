@@ -131,7 +131,7 @@ then
       major=" ----MAJOR----- ";
     fi
 
-    if [ "$wouldDeleteCount" -gt 20 ]
+    if [ "$wouldDeleteCount" -gt 42 ]
     then
       major=" ----INTERSTELLAR BYPASS LEVEL----- ";
     fi
