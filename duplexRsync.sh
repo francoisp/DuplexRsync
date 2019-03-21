@@ -123,20 +123,26 @@ then
   echo "$wouldDeleteRemoteFiles"
   #echo "THE DESTINATION DIR CONTAINS $wouldDeleteCount"
   unset destroyAhead
-  while ! [[ "$destroyAhead" =~ ^(destroy|restore|abort)$ ]]
+  while ! [[ "$destroyAhead" =~ ^(destroy|merge|abort)$ ]]
   do
 
     if [ "$wouldDeleteCount" -gt 5 ]
     then
       major=" ----MAJOR----- ";
     fi
-    echo "ATTENTION $major DESTRUCTION  AHEAD: There is/are $wouldDeleteCount file(s) present in the remote folder that are not present locally. Could the remote folder be totally unrelated? Would you like to restore them locally(restore),Sync and destroy(destroy) or abort?(restore/destroy/abort)"
+
+    if [ "$wouldDeleteCount" -gt 20 ]
+    then
+      major=" ----INTERSTELLAR BYPASS LEVEL----- ";
+    fi
+
+    echo "ATTENTION $major DESTRUCTION  AHEAD: There is/are $wouldDeleteCount file(s) present in the remote folder that are not present locally. Could the remote folder be totally unrelated? Would you like to merge the folders by creeating these locally(merge),Sync and destroy(destroy) or abort?(merge/destroy/abort)"
     read destroyAhead
   done
   if [ "$destroyAhead" = "abort" ];
   then
     exit;
-  elif [ "$destroyAhead" = "restore" ];
+  elif [ "$destroyAhead" = "merge" ];
   then
     # sync from remote without delete
     rsync -auzP --exclude ".*/" --exclude ".____*"  --exclude ".____sentinel" --exclude "node_modules" "$remoteHost:$remoteDir/" .;
