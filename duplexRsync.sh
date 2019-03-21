@@ -10,9 +10,9 @@ printHelp(){
     on the remote end run:
     sudo add-apt-repository ppa:hadret/fswatch
     sudo apt-get update
-    sudo apt-get install fswatch
+    sudo apt-get install -y fswatch
   you need to specify a --remoteHost such as user@192.168.0.2.
-  You can also optionaly specify a --remoteParent that contains/will contain the remmoteDir"
+  You can also optionaly specify a --remoteParent that contains/will contain the remoteDir"
 }
 
 if [ -z $(which brew) ];
