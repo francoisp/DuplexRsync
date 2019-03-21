@@ -84,7 +84,7 @@ chmod a+x ./.____sentinelIncrement.sh
 #create socket to listen for remote changes
 socat TCP-LISTEN:9091,fork EXEC:"./.____sentinelIncrement.sh" > /dev/null 2>&1 &
 #socat TCP-LISTEN:9091,fork EXEC:"./increment_sentinel.sh" > /dev/null 2>&1 &
-# cannot seem to execute bash command form fork EXEC if it would be possible we'd have one less file
+# cannot seem to execute bash command from fork EXEC if it would be possible we'd have one less file
 #socat TCP-LISTEN:9091,fork EXEC:"/bin/bash -c 'sentval=$(cat .____sentinel);sentval=$((sentval+1));echo $sentval'" > /dev/null 2>&1 &
 
 function duplex_rsync() {
@@ -96,11 +96,11 @@ function duplex_rsync() {
     # order matters; if we got a remote trigger we'll process remote as src first to prevent restoring files that might have just been deleted
     if [ "$trigger" = "remote" ];
     then
-      rsync -auzP --exclude ".*/" --exclude ".____*"  --exclude ".____sentinel" --exclude "node_modules" --delete "$remoteHost:$remoteDir/" .;
-      rsync -auzP --exclude ".*/" --exclude ".____*" --exclude ".____sentinel"  --exclude "node_modules" --delete . "$remoteHost:$remoteDir";
+      rsync -auzP --exclude ".*/" --exclude ".____*"  --exclude "node_modules" --delete "$remoteHost:$remoteDir/" .;
+      rsync -auzP --exclude ".*/" --exclude ".____*"  --exclude "node_modules" --delete . "$remoteHost:$remoteDir";
     else # local as src first
-      rsync -auzP --exclude ".*/" --exclude ".____*" --exclude ".____sentinel"  --exclude "node_modules" --delete . "$remoteHost:$remoteDir";
-      rsync -auzP --exclude ".*/" --exclude ".____*"  --exclude ".____sentinel" --exclude "node_modules" --delete "$remoteHost:$remoteDir/" .;
+      rsync -auzP --exclude ".*/" --exclude ".____*"  --exclude "node_modules" --delete . "$remoteHost:$remoteDir";
+      rsync -auzP --exclude ".*/" --exclude ".____*"  --exclude "node_modules" --delete "$remoteHost:$remoteDir/" .;
     fi;
 
     ssh  -R localhost:9091:127.0.0.1:9091 $remoteHost "cd $remoteDir; bash .____rsyncSignal.sh"&
@@ -113,10 +113,10 @@ lastSentinel=$(cat .____sentinel);
 # we always start from the local dir
 trigger=local;
 # do a trial run to see if we'd delete files on the remote end
-wouldDeleteCount=$(rsync -anuzP --exclude ".*/" --exclude ".____*"  --exclude ".____sentinel" --exclude "node_modules" --delete . $remoteHost:$remoteDir/ | grep deleting | wc -l);
+wouldDeleteCount=$(rsync -anuzP --exclude ".*/" --exclude ".____*"  --exclude "node_modules" --delete . $remoteHost:$remoteDir/ | grep deleting | wc -l);
 wouldDeleteCount="$(echo -e "${wouldDeleteCount}" | tr -d '[:space:]')"
 
-wouldDeleteRemoteFiles=$(rsync -anuzP --exclude ".*/" --exclude ".____*"  --exclude ".____sentinel" --exclude "node_modules" --delete . $remoteHost:$remoteDir/ | grep deleting);
+wouldDeleteRemoteFiles=$(rsync -anuzP --exclude ".*/" --exclude ".____*"  --exclude "node_modules" --delete . $remoteHost:$remoteDir/ | grep deleting);
 if [ ! -z "$wouldDeleteRemoteFiles" ];
 then
   echo "WOULD delete count: $wouldDeleteCount"
@@ -145,7 +145,7 @@ then
   elif [ "$destroyAhead" = "merge" ];
   then
     # sync from remote without delete
-    rsync -auzP --exclude ".*/" --exclude ".____*"  --exclude ".____sentinel" --exclude "node_modules" "$remoteHost:$remoteDir/" .;
+    rsync -auzP --exclude ".*/" --exclude ".____*"  --exclude "node_modules" "$remoteHost:$remoteDir/" .;
   fi
 fi;
 
