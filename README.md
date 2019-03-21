@@ -1,6 +1,6 @@
 # DuplexRsync
 
-Simple realtime 2-way sync.
+🌟 Simple realtime 2-way sync.
 
 ### Prombel
 
@@ -34,7 +34,7 @@ on your local machine you'll need brew, that's it. This script will install the 
     chmod u+x duplexRsync.sh
     ./duplexRsync.sh --remoteHost user@192.168.0.2
 
-That's it!
+That's it!🔥
 
 Please Note: A few hidden files are created to maintain the 2-way sync, they all start by .____*. The remote directory will be straight off the home of your remote user's home; there's an optional --remoteParent if you need to change that.
 
