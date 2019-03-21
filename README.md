@@ -10,7 +10,7 @@ When things keep getting heavier, I've then used [sshfs](https://github.com/osxf
 
 ### Solution
 
-So DuplexRsync is a simple and pretty sweet (although only lightly tested) solution based on fswatch and rsync. It's a single file you'll put in your local directory that will maintain (DropBox|GoogleDrive)-style 2-way sync between the current directory and a remote directory via SSH. This has the advantage to work fine when offline. This bash script is a bit macOSX-centric because that's what I use locally, please feel free to adapt. By default the script excludes node_modules and all folders that start with a period. (.git etc)
+So DuplexRsync is a simple and pretty sweet (although only lightly tested as of 2019/03, PLEASE BE CAREFULL AND ALWAYS HAVE BACKUPS and/or VERSIONING!) solution based on fswatch and rsync. It's a single file you'll put in your local directory that will maintain (DropBox|GoogleDrive)-style 2-way sync between the current directory and a remote directory via SSH. This has the advantage to work fine when offline. This bash script is a bit macOSX-centric because that's what I use locally, please feel free to adapt. By default the script excludes node_modules and all folders that start with a period. (.git etc)
 
 ### Merging
 
@@ -18,7 +18,7 @@ If a file has been edited on both ends while offline (duplexRsync not running), 
 
 If you attempt to sync mismatched folders, a lot of files in the remote folder would get deleted. When launching duplexRsync you'll be prompted to either merge the folders (create these files in the local folder), or destroy all the extra files in the remote folder.
 
-Latency for multiple remote edits to propagate to local folder is set by default to 3 seconds, this prevents infinite cycling of change detection. Over very slow network connections you might need to change this.
+Latency for multiple remote edits to propagate to local folder is set by default to 3 seconds, this prevents infinite cycling of change detection. Over very slow network connections you might need to increase this value.
 
 ###  Setup
 
@@ -34,7 +34,7 @@ on your local machine you'll need brew, that's it. This script will install the 
     chmod u+x duplexRsync.sh
     ./duplexRsync.sh --remoteHost user@192.168.0.2
 
-That's it!🔥
+That's it!🔥 Cheers!
 
 Please Note: A few hidden files are created to maintain the 2-way sync, they all start by .____*. The remote directory will be straight off the home of your remote user's home; there's an optional --remoteParent if you need to change that.
 
