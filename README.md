@@ -2,7 +2,7 @@
 
 🌟 Simple realtime 2-way sync.
 
-### Prombel
+### Problem
 
 I often find myself editing quite a few files on remote hosts; for anything non-trivial I like to use local-running tools such as Sublime. I've used [rsub](https://github.com/henrikpersson/rsub), it's very nice and lightweight. Sometimes(often) the light editing turns heavier and more and more files are worked on. I have noticed that when the ssh tunnel dies and is recreated while a file is opened, the file will be truncated to zlitch, a glitch to lookout for that is more likely to occur when multiple files are open.
 
