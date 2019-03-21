@@ -1,5 +1,9 @@
 # DuplexRsync
 
+Simple realtime 2-way sync.
+
+### Prombel
+
 I often find myself editing quite a few files on remote hosts; for anything non-trivial I like to use local-running tools such as Sublime. I've used [rsub](https://github.com/henrikpersson/rsub), it's very nice and lightweight. Sometimes(often) the light editing turns heavier and more and more files are worked on. I have noticed that when the ssh tunnel dies and is recreated while a file is opened, the file will be truncated to zlitch, a glitch to lookout for that is more likely to occur when multiple files are open.
 
 When things keep getting heavier, I've then used [sshfs](https://github.com/osxfuse/osxfuse/wiki/SSHFS) to mount a remote directory and fuse it to the local filesystem. This usually works ok, but for some types of workflows such as sublime projects with a lot of files in subfolders (node_modules? --sometimes this one starts to feel like a whole Gentoo distro) it is inadequate. Search becomes extra slow. The SublimeText project tree spins and spins and spins, features that have become automatisms are unworkable. Also, open files prevent the tunnelling connection from exiting; and a broken tunnel (say you close your laptop without closing everything an unmounting) can leave the fuse subsystem in a weird state, where you cannot remount to the previous location until a reboot, as well as other minor glitches.
