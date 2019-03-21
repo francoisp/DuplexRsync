@@ -10,7 +10,7 @@ When things keep getting heavier, I've then used [sshfs](https://github.com/osxf
 
 ### Solution
 
-So DuplexRsync is a simple and pretty sweet (although only lightly tested as of 2019/03, PLEASE BE CAREFULL AND ALWAYS HAVE BACKUPS and/or VERSIONING!) solution based on fswatch and rsync. It's a single file you'll put in your local directory that will maintain (DropBox|GoogleDrive)-style 2-way sync between the current directory and a remote directory via SSH. This has the advantage to work fine when offline. This bash script is a bit macOSX-centric because that's what I use locally, please feel free to adapt. By default the script excludes node_modules and all folders that start with a period. (.git etc)
+So DuplexRsync is a simple and pretty sweet (although only lightly tested as of 2019/03, PLEASE BE CAREFUL AND ALWAYS HAVE BACKUPS and/or VERSIONING!) solution based on fswatch and rsync. It's a single file you'll put in your local directory that will maintain (DropBox|GoogleDrive)-style 2-way sync between the current directory and a remote directory via SSH. This has the advantage to work fine when offline. This bash script is a bit macOSX-centric because that's what I use locally, please feel free to adapt. By default the script excludes node_modules and all folders that start with a period. (.git etc)
 
 ### Merging
 
