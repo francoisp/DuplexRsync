@@ -10,7 +10,7 @@ When things keep getting heavier, I've then used [sshfs](https://github.com/osxf
 
 ### Solution
 
-So DuplexRsync is a simple and pretty sweet (although only lightly tested as of 2019/03, PLEASE BE CAREFUL AND ALWAYS HAVE BACKUPS and/or VERSIONING!) solution based on fswatch and rsync. It's a single file you'll put in your local directory that will maintain (DropBox|GoogleDrive)-style 2-way sync between the current directory and a remote directory via SSH. This has the advantage to work fine when offline. This bash script is a bit macOSX-centric because that's what I use locally, please feel free to adapt. By default the script excludes node_modules and all folders that start with a period. (.git etc)
+DuplexRsync is a simple and pretty sweet (although only lightly tested as of 2019/03, PLEASE BE CAREFUL AND ALWAYS HAVE BACKUPS and/or VERSIONING!) solution based on fswatch and rsync. It's a single file you'll put in your local directory that will maintain (DropBox|GoogleDrive)-style 2-way sync between the current directory and a remote directory via SSH. This has the advantage to work fine when offline. This bash script is a bit macOSX-centric because that's what I use locally, please feel free to adapt. By default the script excludes node_modules and all folders that start with a period. (.git etc)
 
 ### Merging
 
@@ -34,9 +34,28 @@ on your local machine you'll need brew, that's it. This script will install the 
     chmod u+x duplexRsync.sh
     ./duplexRsync.sh --remoteHost user@192.168.0.2
 
+### Caveats
+
+This is a simple solution, it does not implement any distributed locking. If you or processes are editing at both ends simultaneously, over and above the crushing of the oldest edit of the same file mentionned, there's a window while a newly created file can get deleted. Conversely but less serious, there's also a window during which a deleted file could be recreated. An argument to --delete-older-than "seconds" in rsync would mitigate the first edge case, I think the second one(zombie file coming back) is a an annoyance I can live with.
+
+### Related
+
+Thanks for all the feedback in various forums. Here's a few related projects that have been brought to my attention. I have not tried any of these, they all look very well written; they could come in handy later.
+
+#### Heavier
+
+- [osync](https://github.com/deajan/osync)
+
+#### Heaviest
+
+- [mutagen.io](https://mutagen.io/)
+- [Unison](https://github.com/bcpierce00/unison)
+
+
+
 That's it!🔥 Cheers!
 
-Please Note: A few hidden files are created to maintain the 2-way sync, they all start by .____*. The remote directory will be straight off the home of your remote user's home; there's an optional --remoteParent if you need to change that, and a --signalPort option if you need to run multiple instances from multiple folders concurrently. (shout out to the_pwner224 on HN !)
+Please Note: A few hidden files are created to maintain the 2-way sync, they all start by .____*. The remote directory will be straight off the home of your remote user's home; there's an optional --remoteParent if you need to change that, and a --signalPort option if you need to run multiple instances from multiple folders concurrently.
 
 
 License: MIT
