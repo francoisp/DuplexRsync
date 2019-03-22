@@ -24,7 +24,10 @@ fi
 # this is for macosx, we also need socat to create a socket to remote trigger rsync
 brew install socat fswatch gnu-getopt
 
-if ! options=$(/usr/local/Cellar/gnu-getopt/1.1.6/bin/getopt -u -o hr:p: -l help,remoteHost:,remoteParent: -- "$@")
+#default signalPort
+signalPort=9091
+
+if ! options=$(/usr/local/Cellar/gnu-getopt/1.1.6/bin/getopt -u -o hr:p: -l help,remoteHost:,remoteParent:,signalPort: -- "$@")
 then
     # something went wrong, getopt will put out an error message for us
     exit 1
@@ -40,7 +43,7 @@ do
     -h|--help ) printHelp; exit; shift;;
     -r|--remoteHost ) remoteHost=$2; shift;;
     -p|--remoteParent ) remoteParent=$2; shift;;
-
+    -s|--signalPort ) signalPort=$2; shift;;
     --) shift; break;;
     #(-*) echo "$0: error - unrecognized option $1" 1>&2; exit 1;;
     (*) break;;
@@ -50,11 +53,10 @@ done
 
 remoteDir=${PWD##*/}
 remoteDir="$remoteParent$remoteDir"
-
 # if we have the ssh tunnel running this will match and we kill it
 pkill -f rsyncSignal
 # if we have a lingering socat kill it
-pkill -f TCP-LISTEN:9091
+pkill -f TCP-LISTEN:$signalPort
 
 
 
@@ -69,7 +71,7 @@ then
   exit;
 fi
 #we dump to a remote file the fswatch command that allows local running socat to get a signal of a remote change
-echo 'fswatch -e "node_modules" -o . | while read f; do echo 1 | netcat localhost 9091; done' | ssh $remoteHost  "mkdir -p $remoteDir; cd $remoteDir; cat > .____rsyncSignal.sh"
+echo "fswatch -e \"node_modules\" -o . | while read f; do echo 1 | netcat localhost $signalPort; done" | ssh $remoteHost  "mkdir -p $remoteDir; cd $remoteDir; cat > .____rsyncSignal.sh"
 
 #if [ ! -f .____sentinel ];
 #then
@@ -82,10 +84,10 @@ echo '0' > .____sentinel
 echo 'sentval=$(cat .____sentinel);sentval=$((sentval+1));echo $sentval > .____sentinel;' > ./.____sentinelIncrement.sh
 chmod a+x ./.____sentinelIncrement.sh
 #create socket to listen for remote changes
-socat TCP-LISTEN:9091,fork EXEC:"./.____sentinelIncrement.sh" > /dev/null 2>&1 &
-#socat TCP-LISTEN:9091,fork EXEC:"./increment_sentinel.sh" > /dev/null 2>&1 &
+socat TCP-LISTEN:$signalPort,fork EXEC:"./.____sentinelIncrement.sh" > /dev/null 2>&1 &
+#socat TCP-LISTEN:$signalPort,fork EXEC:"./increment_sentinel.sh" > /dev/null 2>&1 &
 # cannot seem to execute bash command from fork EXEC if it would be possible we'd have one less file
-#socat TCP-LISTEN:9091,fork EXEC:"/bin/bash -c 'sentval=$(cat .____sentinel);sentval=$((sentval+1));echo $sentval'" > /dev/null 2>&1 &
+#socat TCP-LISTEN:$signalPort,fork EXEC:"/bin/bash -c 'sentval=$(cat .____sentinel);sentval=$((sentval+1));echo $sentval'" > /dev/null 2>&1 &
 
 function duplex_rsync() {
     # kill the remote fswatch while we sync
@@ -103,7 +105,7 @@ function duplex_rsync() {
       rsync -auzP --exclude ".*/" --exclude ".____*"  --exclude "node_modules" --delete "$remoteHost:$remoteDir/" .;
     fi;
 
-    ssh  -R localhost:9091:127.0.0.1:9091 $remoteHost "cd $remoteDir; bash .____rsyncSignal.sh"&
+    ssh  -R localhost:$signalPort:127.0.0.1:$signalPort $remoteHost "cd $remoteDir; bash .____rsyncSignal.sh"&
     #tunnelPid="$!"
     # echo "tunnelPid:$tunnelPid"
 }
