@@ -48,8 +48,10 @@ Thanks for all the feedback in various forums. Here's a few related projects tha
 
 #### Heaviest
 
-- [mutagen.io](https://mutagen.io/)
+- [Mutagen.io](https://mutagen.io/)
+- [Syncthing](https://github.com/syncthing/syncthing)
 - [Unison](https://github.com/bcpierce00/unison)
+
 
 
 
