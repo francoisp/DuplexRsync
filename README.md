@@ -36,7 +36,7 @@ on your local machine you'll need brew, that's it. This script will install the 
 
 ### Caveats
 
-This is a simple solution, it does not implement any distributed locking. If you or processes are editing at both ends simultaneously, over and above the crushing of the oldest edit of the same file mentionned, there's a window while a newly created file can get deleted. Conversely but less serious, there's also a window during which a deleted file could be recreated. An argument to --delete-older-than "seconds" in rsync would mitigate the first edge case, I think the second one(zombie file coming back) is a an annoyance I can live with.
+This is a simple solution, it does not implement any distributed locking. If you or processes are editing at both ends simultaneously, over and above the crushing of the oldest edit of the same file mentioned, there's a window while a newly created file can get deleted. Conversely but less serious, there's also a window during which a deleted file could be recreated. An argument to --delete-older-than "seconds" in rsync would mitigate the first edge case, I think the second one(zombie file coming back) is a an annoyance I can live with.
 
 ### Related
 
