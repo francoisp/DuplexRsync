@@ -40,7 +40,7 @@ This is a simple solution, it does not implement any distributed locking. If you
 
 ### Related
 
-Thanks for all the feedback in various forums. Here's a few related projects that have been brought to my attention. I have not tried any of these, they all look very well written; they could come in handy later.
+Thanks for all the feedback in various forums. Here are a few related projects that have been brought to my attention. I have not tried any of these, they all look very well written; they could come in handy later.
 
 #### Heavier
 
