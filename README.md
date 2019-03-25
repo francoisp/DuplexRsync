@@ -57,7 +57,7 @@ Thanks for all the feedback in various forums. Here are a few related projects t
 
 That's it!🔥 Cheers!
 
-Please Note: A few hidden files are created to maintain the 2-way sync, they all start by .____*. The remote directory will be straight off the home of your remote user's home; there's an optional --remoteParent if you need to change that, and a --signalPort option if you need to run multiple instances from multiple folders concurrently.
+Please Note: A few hidden files are created to maintain the 2-way sync, they all start by .____*. The remote directory will be straight off the home of your remote user's home; there's an optional --remoteParent if you need to change that.
 
 
 License: MIT

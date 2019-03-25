@@ -78,7 +78,7 @@ pkill -f "rsyncSignal.sh --pwd $PWD"
 pkill -f "sentinelIncrement.sh --pwd $PWD"
 
 
-if [ ! -f "~/.ssh/id_rsa.pub" ];
+if [ ! -f ~/.ssh/id_rsa.pub ];
 then
   echo "You need a key pair to use duplexRsync. You can generate one using: ssh-keygen -t rsa"
   exit;
