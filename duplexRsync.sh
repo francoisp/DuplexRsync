@@ -71,11 +71,8 @@ done
 
 remoteDir=${PWD##*/}
 remoteDir="$remoteParent$remoteDir"
-# if we have the ssh tunnel running this will match and we kill it; pwd args to prevent killing other folders being watched
-pkill -f "rsyncSignal.sh --pwd $PWD"
-# if we have a lingering socat kill it
-# we shouldnt have one, this is a bad plan if using multple sockets
-pkill -f "sentinelIncrement.sh --pwd $PWD"
+
+
 
 
 if [ ! -f ~/.ssh/id_rsa.pub ];
@@ -95,6 +92,12 @@ then
   exit;
 fi
 
+ssh $remoteHost "pkill -f 'rsyncSignal.sh --pwd $PWD'"
+# if we have the ssh tunnel running this will match and we kill it; pwd args to prevent killing other folders being watched
+pkill -f "rsyncSignal.sh --pwd $PWD"
+# if we have a lingering socat kill it
+# we shouldnt have one, this is a bad plan if using multple sockets
+pkill -f "sentinelIncrement.sh --pwd $PWD"
 
 #if [ ! -f .____sentinel ];
 #then
