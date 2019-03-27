@@ -21,7 +21,15 @@ printHelp(){
     --localPort        if you want to run multiple instances of duplexRsync"
 }
 
-if [ -z $(which brew) ];
+# if our arguments match this string, it's the socat fork trgger for remote change detection; increment and exit
+if [ "$*" =  "sentinelIncrement" ];
+then
+  sentval=$(cat .____sentinel);sentval=$((sentval+1));echo $sentval > .____sentinel;
+  exit;
+fi
+
+# we need brew on macosx
+if [ -z $(command -v brew) ];
 then
   printHelp;
   exit
@@ -99,26 +107,16 @@ pkill -f "rsyncSignal.sh --pwd $PWD"
 # we shouldnt have one, this is a bad plan if using multple sockets
 pkill -f "sentinelIncrement.sh --pwd $PWD"
 
-#if [ ! -f .____sentinel ];
-#then
-# we always create a new sentinel file
 echo '0' > .____sentinel
-#fi
-
-
-#one liner script to increment our sentinel
-echo 'sentval=$(cat .____sentinel);sentval=$((sentval+1));echo $sentval > .____sentinel;' > ./.____sentinelIncrement.sh
-chmod a+x ./.____sentinelIncrement.sh
 
 #create localsocket to listen for remote changes
-# cannot seem to execute bash command from fork EXEC if it would be possible we'd have one less file
-#socat TCP-LISTEN:$localPort,fork EXEC:'/bin/bash -c "sentval=$(cat .____sentinel);sentval=$((sentval+1));echo $sentval > .____sentinel;"" > /dev/null 2>&1 &
 socatRes="not listening yet, we get a random port in the following loop";
 while [ ! -z "$socatRes" ]
 do
   randomLocalPort;
   socatRes="";
-  socatRes=$(socat TCP-LISTEN:$localPort,fork EXEC:"./.____sentinelIncrement.sh  --pwd $PWD" 2>&1 &) &
+  # frok call this script with a special argument that simply inccrement snetinel and exits
+  socatRes=$(socat TCP-LISTEN:$localPort,fork EXEC:"./duplexRsync.sh sentinelIncrement" 2>&1 &) &
   # result should be empty when listen works
 done;
 
