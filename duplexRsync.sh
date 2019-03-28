@@ -17,14 +17,19 @@ printHelp(){
     --remoteHost        ex: user@192.168.0.2.
 
   You can also optionally specify:
-    --remoteParent      contains/will contain the remoteDir
-    --localPort        if you want to run multiple instances of duplexRsync"
+    --remoteParent      contains/will contain the remoteDir"
 }
 
 # if our arguments match this string, it's the socat fork trgger for remote change detection; increment sentinel and exit
 if [ "$*" =  "sentinelIncrement" ];
 then
   sentval=$(cat .____sentinel);sentval=$((sentval+1));echo $sentval > .____sentinel;
+  exit;
+fi
+
+if [ "$*" =  "" ];
+then
+   printHelp;
   exit;
 fi
 
@@ -76,6 +81,12 @@ do
     shift
 done
 
+if [ -z "$remoteHost" ];
+then
+  echo "Missing Argument: --remoteHost"
+  printHelp;
+  exit;
+fi
 
 remoteDir=${PWD##*/}
 remoteDir="$remoteParent$remoteDir"
@@ -91,11 +102,19 @@ fi
 
 # we'll need to ssh without pass - use public key crypto to ssh into remote end,  rsync needs this
 #we are copying our pubkey to ssh in without prompt
-cat ~/.ssh/id_rsa.pub | ssh "$remoteHost"  'mkdir .ssh;pubkey=$(cat); if grep -q "$pubkey" ".ssh/authorized_keys"; then echo "puublic key for this user already present"; else echo $pubkey >> .ssh/authorized_keys;fi'
+cat ~/.ssh/id_rsa.pub | ssh "$remoteHost"  'mkdir .ssh;pubkey=$(cat); touch .ssh/authorized_keys; if grep -q "$pubkey" ".ssh/authorized_keys"; then echo "puublic key for this user already present"; else echo $pubkey >> .ssh/authorized_keys;fi'
 
-fswatchPath=$(ssh "$remoteHost" 'which fswatch')
+
+fswatchPath=$(ssh "$remoteHost" 'command -v fswatch')
+#on macosx remote the $PATH variable is different when local or ssh, lets try with looking up the local path
 if [ -z "$fswatchPath" ];
 then
+  fswatchPath=$(ssh "$remoteHost" 'command -v /usr/local/bin/fswatch')
+fi
+
+if [ -z "$fswatchPath" ];
+then
+  echo "ERROR: missing fswatch at remote end"
   printHelp;
   exit;
 fi
@@ -126,7 +145,7 @@ echo "listening locally on:$localPort"
 remotePort=$localPort
 
 #we dump to a remote file the fswatch command that allows local running socat to get a signal of a remote change
-echo "fswatch -e \"node_modules\" -o . | while read f; do echo 1 | netcat localhost $remotePort; done" | ssh $remoteHost  "mkdir -p $remoteDir; cd $remoteDir; cat > .____rsyncSignal.sh"
+echo "$fswatchPath -e \"node_modules\" -o . | while read f; do echo 1 | netcat localhost $remotePort; done" | ssh $remoteHost  "mkdir -p $remoteDir; cd $remoteDir; cat > .____rsyncSignal.sh"
 
 function duplex_rsync() {
     # kill the remote fswatch while we sync, pwd arg used to prevent attempting to kill other watches; port prevent killing if 2 locals have the exact same path local
