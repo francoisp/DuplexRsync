@@ -21,7 +21,7 @@ printHelp(){
     --localPort        if you want to run multiple instances of duplexRsync"
 }
 
-# if our arguments match this string, it's the socat fork trgger for remote change detection; increment and exit
+# if our arguments match this string, it's the socat fork trgger for remote change detection; increment sentinel and exit
 if [ "$*" =  "sentinelIncrement" ];
 then
   sentval=$(cat .____sentinel);sentval=$((sentval+1));echo $sentval > .____sentinel;
@@ -48,8 +48,8 @@ function randomLocalPort() {
 function randomRemotePort() {
   remotePort=42
   remotePort=$RANDOM;
-  let "localPort %= 999";
-  remotePort="42$localPort"
+  let "remotePort %= 999";
+  remotePort="42$remotePort"
 }
 
 
@@ -105,10 +105,9 @@ ssh $remoteHost "pkill -f 'rsyncSignal.sh --pwd $PWD'"
 pkill -f "rsyncSignal.sh --pwd $PWD"
 # if we have a lingering socat kill it
 # we shouldnt have one, this is a bad plan if using multple sockets
-pkill -f "sentinelIncrement.sh --pwd $PWD"
+#pkill -f "sentinelIncrement.sh --pwd $PWD"
 
 echo '0' > .____sentinel
-
 #create localsocket to listen for remote changes
 socatRes="not listening yet, we get a random port in the following loop";
 while [ ! -z "$socatRes" ]
@@ -163,10 +162,19 @@ wouldDeleteCount="$(echo -e "${wouldDeleteCount}" | tr -d '[:space:]')"
 wouldDeleteRemoteFiles=$(rsync -anuzP --exclude ".*/" --exclude ".____*"  --exclude "node_modules" --delete . $remoteHost:$remoteDir/ | grep deleting);
 if [ ! -z "$wouldDeleteRemoteFiles" ];
 then
-  echo "WOULD delete count: $wouldDeleteCount"
-  echo "$wouldDeleteRemoteFiles"
-  #echo "THE DESTINATION DIR CONTAINS $wouldDeleteCount"
+
   unset destroyAhead
+  unset localFileCount
+  localFileCount=$(find . -type f | egrep -v '\..+/' | egrep -v '\./duplexRsync.sh' | egrep -v '\./\.____*' |  wc -l |  tr -d '[:space:]')
+  # if the local directory is empty using same pattern as rsync above we always merge
+  if [ "$localFileCount" -eq 0 ]
+  then
+    destroyAhead="merge"
+  else
+    echo "WOULD delete count: $wouldDeleteCount"
+    echo "$wouldDeleteRemoteFiles"
+  fi
+
   while ! [[ "$destroyAhead" =~ ^(destroy|merge|abort)$ ]]
   do
 
