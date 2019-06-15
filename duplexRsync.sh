@@ -3,7 +3,7 @@
 # REQUIREMENT we need fswatch on both ends, run this to get it on ubuntu1604
 #sudo add-apt-repository ppa:hadret/fswatch
 #sudo apt-get update
-#sudo apt-get install fswatch
+#sudo apt-get install -y fswatch
 printHelp(){
   echo "USAGE: duplexRsync --remoteHost user@host
 
@@ -27,6 +27,7 @@ then
   exit;
 fi
 
+
 if [ "$*" =  "" ];
 then
    printHelp;
@@ -42,6 +43,7 @@ fi
 
 # this is for macosx, we also need socat to create a socket to remote trigger rsync
 brew install socat fswatch gnu-getopt
+
 
 function randomLocalPort() {
   localPort=42
@@ -119,7 +121,7 @@ then
   exit;
 fi
 
-ssh $remoteHost "pkill -f 'rsyncSignal.sh --pwd $PWD'"
+ssh $remoteHost "pkill -f '____rsyncSignal.sh --pwd $PWD'"
 # if we have the ssh tunnel running this will match and we kill it; pwd args to prevent killing other folders being watched
 pkill -f "rsyncSignal.sh --pwd $PWD"
 # if we have a lingering socat kill it
@@ -145,12 +147,32 @@ echo "listening locally on:$localPort"
 remotePort=$localPort
 
 #we dump to a remote file the fswatch command that allows local running socat to get a signal of a remote change
-echo "$fswatchPath -e \"node_modules\" -o . | while read f; do echo 1 | netcat localhost $remotePort; done" | ssh $remoteHost  "mkdir -p $remoteDir; cd $remoteDir; cat > .____rsyncSignal.sh"
+# modification to add the -r switch to all subs excluding node_modules. This is required because fswatch will still iterate over all subdirs because the -e switch is a pattern, not a path
+
+# if you get a bunch of: inotify_add_watch: No space left on device
+# you will need to https://github.com/guard/listen/wiki/Increasing-the-amount-of-inotify-watchers
+# check your current limit: cat /proc/sys/fs/inotify/max_user_watches
+# ATTENTION: you cannot change this kernel param if running in an unpriviledged container, you'll need to run this in the hosting kernel's env
+#  echo fs.inotify.max_user_watches=524288 | tee -a /etc/sysctl.conf && sysctl -p; echo "increasing the limit of watches, cannot be done in unpriv container"
+#echo "$fswatchPath -r -e \"node_modules\" -o . | while read f; do echo 1 | nc localhost $remotePort; done" | ssh $remoteHost  "mkdir -p $remoteDir; cd $remoteDir; cat > .____rsyncSignal.sh"
+absPath=$(ssh nuxt@10.12.14.65 "mkdir -p $remoteDir; cd $remoteDir; pwd")
+
+#/usr/bin/fswatch -o -r  /home/nuxt/apollo1/plugins | while read f; do if [ -z   "$v1" ]; then v1='first recursive is spurious';echo $v1; else echo $f '1 | nc localhost 42832'; fi done &
+
+#find /home/nuxt/apollo1 -maxdepth 1 -mindepth 1 -type d  ! -name \"node_modules\" ! -name \".*\"| nl | awk '{printf "/usr/bin/fswatch -o -r %s  | while read f; do if [ -z \"$var%d\" ]; then var%d=\"recursive first msg is spurious\"; else echo 1 | nc localhost $remotePort; fi done \& \n", $2, $1, $1}'
+
+# we are exluding node_modules and .git
+ssh $remoteHost "mkdir -p $remoteDir; cd $remoteDir;find $absPath -maxdepth 1 -mindepth 1 -type d  ! -name \"node_modules\" ! -name \".*\"| nl | awk '{printf \"/usr/bin/fswatch -o -r %s  | while read f; do if [ -z \\\"\$var%d\\\" ]; then var%d=\\\"recursive first msg is spurious\\\"; else echo 1 | nc localhost $remotePort; fi done \& \n\", \$2, \$1, \$1}' > .____rsyncSignal.sh"
+ssh $remoteHost "cd $remoteDir; echo \"/usr/bin/fswatch -o $absPath | while read f; do echo 1 | nc localhost $remotePort; done\" >> .____rsyncSignal.sh"
+
 
 function duplex_rsync() {
     # kill the remote fswatch while we sync, pwd arg used to prevent attempting to kill other watches; port prevent killing if 2 locals have the exact same path local
     # also this discloses local path to remote end; dont think this is serious
-    ssh $remoteHost "pkill -f 'rsyncSignal.sh --pwd $PWD --port $remotePort'"
+    ssh $remoteHost "pkill -f '____rsyncSignal.sh --pwd $PWD --port $remotePort'"
+    # kill all remote fswatches
+    ssh $remoteHost "kill \$(ps ax | egrep \"/usr/bin/fswatch -o( -r)? /home/nuxt/apollo1.*\" | awk '{print \$1}')"
+
     # also kill the tunnel
     pkill -f "rsyncSignal.sh --pwd $PWD"
 
@@ -227,10 +249,12 @@ duplex_rsync;fswatch -r -o . | while read f;
     # if the change is remote(incremented ____sentinel) lets slow down and wait to gobble multiple events
     if [ $sentinelInc -gt 0 ]
     then
+      echo 'remote change detected';
       trigger=remote;
       duplex_rsync;
       sleep 3;
     else
+      echo 'local change detected';
       trigger=local;
       duplex_rsync;
     fi
