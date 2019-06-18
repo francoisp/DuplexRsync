@@ -121,6 +121,9 @@ then
   exit;
 fi
 
+# kill all remote fswatches for this path that might be lingering
+ssh $remoteHost "pkill -P \$(ps alx | egrep '.*pipe_w.*____rsyncSignal.sh --pwd $PWD --port $remotePort' | awk '{print \$4}' | head -n 1)"
+
 ssh $remoteHost "pkill -f '____rsyncSignal.sh --pwd $PWD'"
 # if we have the ssh tunnel running this will match and we kill it; pwd args to prevent killing other folders being watched
 pkill -f "rsyncSignal.sh --pwd $PWD"
@@ -161,17 +164,25 @@ absPath=$(ssh nuxt@10.12.14.65 "mkdir -p $remoteDir; cd $remoteDir; pwd")
 
 #find /home/nuxt/apollo1 -maxdepth 1 -mindepth 1 -type d  ! -name \"node_modules\" ! -name \".*\"| nl | awk '{printf "/usr/bin/fswatch -o -r %s  | while read f; do if [ -z \"$var%d\" ]; then var%d=\"recursive first msg is spurious\"; else echo 1 | nc localhost $remotePort; fi done \& \n", $2, $1, $1}'
 
-# we are exluding node_modules and .git
-ssh $remoteHost "mkdir -p $remoteDir; cd $remoteDir; find $absPath -maxdepth 1 -mindepth 1 -type d  ! -name \"node_modules\" ! -name \".*\"| nl | awk '{printf \"/usr/bin/fswatch -o -r %s  | while read f; do if [ -z \\\"\$var%d\\\" ]; then var%d=\\\"recursive first msg is spurious\\\"; else  echo 1 | nc localhost $remotePort; fi done \& \n\", \$2, \$1, \$1}' > .____rsyncSignal.sh"
-ssh $remoteHost "cd $remoteDir; echo \"/usr/bin/fswatch -o $absPath | while read f; do echo 1 | nc localhost $remotePort; done\" >> .____rsyncSignal.sh"
+# we are exluding node_modules and folders starting with .
+ssh $remoteHost "mkdir -p $remoteDir; cd $remoteDir; find $absPath -maxdepth 1 -mindepth 1 -type d  ! -name \"node_modules\" ! -name \".*\"|  awk '{ print \"\\\"\"\$0\"\\\"\"}' |  nl | awk -F\\\" '{printf \"/usr/bin/fswatch  -x --event Updated --event Created --event Removed --event Renamed --event MovedFrom --event MovedTo -r \\\"%s\\\"  | while read f; do  echo 1 | nc localhost $remotePort; done \& \n\", \$2, \$1, \$1}' > .____rsyncSignal.sh"
+ssh $remoteHost "cd $remoteDir; echo \"/usr/bin/fswatch -x --event Updated --event Created --event Removed --event Renamed --event MovedFrom --event MovedTo -o $absPath | while read f; do echo 1 | nc localhost $remotePort; done\" >> .____rsyncSignal.sh"
 
+
+# we are exluding node_modules and folders starting with .
+# this should work, but there seems to be a bug in fswatch, so we are using multiple processes instead
+#ssh $remoteHost "mkdir -p $remoteDir; cd $remoteDir; find $absPath -maxdepth 1 -mindepth 1 -type d  ! -name \"node_modules\" ! -name \".*\" |  awk '{ print \"\\\"\"\$0\"\\\"\"}' | awk -F\\\" '{printf \" \\\"%s\\\" \", \$2}'  | (echo -n \" /usr/bin/fswatch  -x --event Updated --event Created --event Removed --event Renamed --event MovedFrom --event MovedTo -r  \" && cat) > .____rsyncSignal.sh"
+#ssh $remoteHost "cd $remoteDir; echo \" | while read f; do if [ -z \\\"\$skip\\\" ]; then skip=\\\"recursive first msg is spurious\\\"; else echo 1 | nc localhost $remotePort; fi done & /usr/bin/fswatch -o $absPath | while read f; do echo 1 | nc localhost $remotePort; done\" >> .____rsyncSignal.sh"
+#exit 1;
 
 function duplex_rsync() {
+
+    # kill all remote fswatches
+    ssh $remoteHost "pkill -P \$(ps alx | egrep '.*pipe_w.*____rsyncSignal.sh --pwd $PWD --port $remotePort' | awk '{print \$4}' | head -n 1)"
+
     # kill the remote fswatch while we sync, pwd arg used to prevent attempting to kill other watches; port prevent killing if 2 locals have the exact same path local
     # also this discloses local path to remote end; dont think this is serious
     ssh $remoteHost "pkill -f '____rsyncSignal.sh --pwd $PWD --port $remotePort'"
-    # kill all remote fswatches
-    ssh $remoteHost "kill \$(ps ax | egrep \"/usr/bin/fswatch -o( -r)? /home/nuxt/apollo1.*\" | awk '{print \$1}')"
 
     # also kill the tunnel
     pkill -f "rsyncSignal.sh --pwd $PWD"
@@ -245,6 +256,7 @@ fi;
 duplex_rsync;fswatch -r -o . | while read f;
   do
     sentinel=$(cat .____sentinel);
+    echo "sentinel $sentinel lastSentinel: $lastSentinel"
     sentinelInc=$((sentinel-lastSentinel));
     # if the change is remote(incremented ____sentinel) lets slow down and wait to gobble multiple events
     if [ $sentinelInc -gt 0 ]
