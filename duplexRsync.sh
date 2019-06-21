@@ -168,21 +168,22 @@ absPath=$(ssh nuxt@10.12.14.65 "mkdir -p $remoteDir; cd $remoteDir; pwd")
 ssh $remoteHost "mkdir -p $remoteDir; cd $remoteDir; find $absPath -maxdepth 1 -mindepth 1 -type d  ! -name \"node_modules\" ! -name \".*\"|  awk '{ print \"\\\"\"\$0\"\\\"\"}' |  nl | awk -F\\\" '{printf \"/usr/bin/fswatch  -x --event Updated --event Created --event Removed --event Renamed --event MovedFrom --event MovedTo -r \\\"%s\\\"  | while read f; do  echo 1 | nc localhost $remotePort; done \& \n\", \$2, \$1, \$1}' > .____rsyncSignal.sh"
 ssh $remoteHost "cd $remoteDir; echo \"/usr/bin/fswatch -x --event Updated --event Created --event Removed --event Renamed --event MovedFrom --event MovedTo -o $absPath | while read f; do echo 1 | nc localhost $remotePort; done\" >> .____rsyncSignal.sh"
 
-
 # we are exluding node_modules and folders starting with .
 # this should work, but there seems to be a bug in fswatch, so we are using multiple processes instead
 #ssh $remoteHost "mkdir -p $remoteDir; cd $remoteDir; find $absPath -maxdepth 1 -mindepth 1 -type d  ! -name \"node_modules\" ! -name \".*\" |  awk '{ print \"\\\"\"\$0\"\\\"\"}' | awk -F\\\" '{printf \" \\\"%s\\\" \", \$2}'  | (echo -n \" /usr/bin/fswatch  -x --event Updated --event Created --event Removed --event Renamed --event MovedFrom --event MovedTo -r  \" && cat) > .____rsyncSignal.sh"
 #ssh $remoteHost "cd $remoteDir; echo \" | while read f; do if [ -z \\\"\$skip\\\" ]; then skip=\\\"recursive first msg is spurious\\\"; else echo 1 | nc localhost $remotePort; fi done & /usr/bin/fswatch -o $absPath | while read f; do echo 1 | nc localhost $remotePort; done\" >> .____rsyncSignal.sh"
 #exit 1;
 
+
 function duplex_rsync() {
 
-    # kill all remote fswatches
-    ssh $remoteHost "pkill -P \$(ps alx | egrep '.*pipe_w.*____rsyncSignal.sh --pwd $PWD --port $remotePort' | awk '{print \$4}' | head -n 1)"
+    # kill all remote fswatches, also supress kill notice in bash
+    ssh $remoteHost "pkill -P \$(ps alx | egrep '.*pipe_w.*____rsyncSignal.sh --pwd $PWD --port $remotePort' | awk '{print \$4}' | head -n 1) >/dev/null 2&>1"
 
     # kill the remote fswatch while we sync, pwd arg used to prevent attempting to kill other watches; port prevent killing if 2 locals have the exact same path local
     # also this discloses local path to remote end; dont think this is serious
     ssh $remoteHost "pkill -f '____rsyncSignal.sh --pwd $PWD --port $remotePort'"
+
 
     # also kill the tunnel
     pkill -f "rsyncSignal.sh --pwd $PWD"
