@@ -160,10 +160,6 @@ remotePort=$localPort
 #echo "$fswatchPath -r -e \"node_modules\" -o . | while read f; do echo 1 | nc localhost $remotePort; done" | ssh $remoteHost  "mkdir -p $remoteDir; cd $remoteDir; cat > .____rsyncSignal.sh"
 absPath=$(ssh $remoteHost "mkdir -p $remoteDir; cd $remoteDir; pwd")
 
-#/usr/bin/fswatch -o -r  /home/nuxt/apollo1/plugins | while read f; do if [ -z   "$v1" ]; then v1='first recursive is spurious';echo $v1; else echo $f '1 | nc localhost 42832'; fi done &
-
-#find /home/nuxt/apollo1 -maxdepth 1 -mindepth 1 -type d  ! -name \"node_modules\" ! -name \".*\"| nl | awk '{printf "/usr/bin/fswatch -o -r %s  | while read f; do if [ -z \"$var%d\" ]; then var%d=\"recursive first msg is spurious\"; else echo 1 | nc localhost $remotePort; fi done \& \n", $2, $1, $1}'
-
 # we are exluding node_modules and folders starting with .
 ssh $remoteHost "mkdir -p $remoteDir; cd $remoteDir; find $absPath -maxdepth 1 -mindepth 1 -type d  ! -name \"node_modules\" ! -name \".*\"|  awk '{ print \"\\\"\"\$0\"\\\"\"}' |  nl | awk -F\\\" '{printf \"/usr/bin/fswatch  -x --event Updated --event Created --event Removed --event Renamed --event MovedFrom --event MovedTo -r \\\"%s\\\"  | while read f; do  echo 1 | nc localhost $remotePort; done \& \n\", \$2, \$1, \$1}' > .____rsyncSignal.sh"
 ssh $remoteHost "cd $remoteDir; echo \"/usr/bin/fswatch -x --event Updated --event Created --event Removed --event Renamed --event MovedFrom --event MovedTo -o $absPath | while read f; do echo 1 | nc localhost $remotePort; done\" >> .____rsyncSignal.sh"
