@@ -158,7 +158,7 @@ remotePort=$localPort
 # ATTENTION: you cannot change this kernel param if running in an unpriviledged container, you'll need to run this in the hosting kernel's env
 #  echo fs.inotify.max_user_watches=524288 | tee -a /etc/sysctl.conf && sysctl -p; echo "increasing the limit of watches, cannot be done in unpriv container"
 #echo "$fswatchPath -r -e \"node_modules\" -o . | while read f; do echo 1 | nc localhost $remotePort; done" | ssh $remoteHost  "mkdir -p $remoteDir; cd $remoteDir; cat > .____rsyncSignal.sh"
-absPath=$(ssh nuxt@10.12.14.65 "mkdir -p $remoteDir; cd $remoteDir; pwd")
+absPath=$(ssh $remoteHost "mkdir -p $remoteDir; cd $remoteDir; pwd")
 
 #/usr/bin/fswatch -o -r  /home/nuxt/apollo1/plugins | while read f; do if [ -z   "$v1" ]; then v1='first recursive is spurious';echo $v1; else echo $f '1 | nc localhost 42832'; fi done &
 
