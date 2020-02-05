@@ -60,7 +60,7 @@ function randomRemotePort() {
 }
 
 
-if ! options=$(/usr/local/Cellar/gnu-getopt/1.1.6/bin/getopt -u -o hr:p: -l help,remoteHost:,remoteParent: -- "$@")
+if ! options=$(/usr/local/Cellar/gnu-getopt/*/bin/getopt -u -o hr:p: -l help,remoteHost:,remoteParent: -- "$@")
 then
     # something went wrong, getopt will put out an error message for us
     exit 1
